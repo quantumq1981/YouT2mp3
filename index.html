@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouT2mp3 – YouTube Audio Converter</title>
+    <style>
+        :root {
+            --bg-primary:   #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card:      #16213e;
+            --accent-1:     #7c3aed;
+            --accent-2:     #3b82f6;
+            --grad:         linear-gradient(135deg, #7c3aed, #3b82f6);
+            --text-primary: #f8fafc;
+            --text-secondary:#94a3b8;
+            --text-muted:   #64748b;
+            --border:       #2d3748;
+            --success:      #10b981;
+            --error:        #ef4444;
+            --shadow:       0 4px 24px rgba(0,0,0,.4);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* ── Header ───────────────────────────────── */
+        header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: .875rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: .625rem;
+            font-size: 1.4rem;
+            font-weight: 800;
+            background: var(--grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .logo-icon {
+            width: 34px; height: 34px;
+            background: var(--grad);
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            -webkit-text-fill-color: white;
+            flex-shrink: 0;
+        }
+        .badge {
+            color: var(--text-muted);
+            font-size: .75rem;
+        }
+
+        /* ── Main ─────────────────────────────────── */
+        main {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 2rem 1rem 3rem;
+        }
+
+        /* ── Hero ─────────────────────────────────── */
+        .hero {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .hero h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            background: var(--grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: .4rem;
+        }
+        .hero p { color: var(--text-secondary); font-size: 1.05rem; }
+
+        /* ── Card ─────────────────────────────────── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+
+        /* ── URL row ──────────────────────────────── */
+        .url-row {
+            display: flex;
+            gap: .625rem;
+            margin-bottom: 1.25rem;
+        }
+        .url-input {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: .8rem 1.1rem;
+            color: var(--text-primary);
+            font-size: .95rem;
+            outline: none;
+            transition: border-color .2s;
+        }
+        .url-input:focus { border-color: var(--accent-1); }
+        .url-input::placeholder { color: var(--text-muted); }
+        .btn-paste {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: .8rem 1.1rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: .875rem;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+        .btn-paste:hover { border-color: var(--accent-1); color: var(--text-primary); }
+
+        /* ── Video preview ────────────────────────── */
+        .video-preview {
+            display: none;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: .875rem;
+            margin-bottom: 1.25rem;
+            gap: .875rem;
+            align-items: center;
+        }
+        .video-preview.show { display: flex; }
+        .video-thumb {
+            width: 112px; height: 63px;
+            object-fit: cover;
+            border-radius: 6px;
+            flex-shrink: 0;
+            background: var(--bg-primary);
+        }
+        .video-meta { flex: 1; min-width: 0; }
+        .video-title {
+            font-weight: 600;
+            font-size: .9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: .2rem;
+        }
+        .video-author { color: var(--text-secondary); font-size: .78rem; }
+
+        /* ── Format grid ──────────────────────────── */
+        .section-label {
+            font-size: .75rem;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: .625rem;
+        }
+        .format-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: .5rem;
+            margin-bottom: 1.25rem;
+        }
+        .format-radio { display: none; }
+        .format-label {
+            display: block;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 9px;
+            padding: .5rem .875rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s;
+            user-select: none;
+        }
+        .format-label:hover { border-color: var(--accent-1); }
+        .format-radio:checked + .format-label {
+            background: var(--grad);
+            border-color: transparent;
+            color: white;
+        }
+        .fmt-name { display: block; font-weight: 700; font-size: .95rem; }
+        .fmt-desc { display: block; font-size: .68rem; opacity: .8; margin-top: .1rem; }
+
+        /* ── Download button ──────────────────────── */
+        .btn-download {
+            width: 100%;
+            background: var(--grad);
+            border: none;
+            border-radius: 11px;
+            padding: .95rem 2rem;
+            color: white;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+        }
+        .btn-download:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(124,58,237,.4);
+        }
+        .btn-download:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+        /* ── Status box ───────────────────────────── */
+        .status-box {
+            margin-top: 1rem;
+            border-radius: 9px;
+            padding: .875rem 1rem;
+            font-size: .88rem;
+            display: none;
+        }
+        .status-box a { color: inherit; font-weight: 600; }
+        .status-box.info    { background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.3); color: #93c5fd; display: block; }
+        .status-box.success { background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.3); color: #6ee7b7; display: block; }
+        .status-box.error   { background: rgba(239,68,68,.12);  border: 1px solid rgba(239,68,68,.3);  color: #fca5a5; display: block; }
+        .status-box.loading { background: rgba(124,58,237,.12); border: 1px solid rgba(124,58,237,.3); color: #c4b5fd; display: block; }
+
+        /* ── Warning banner ───────────────────────── */
+        .warning {
+            background: rgba(245,158,11,.1);
+            border: 1px solid rgba(245,158,11,.3);
+            border-radius: 11px;
+            padding: .875rem 1.1rem;
+            margin-bottom: 1.25rem;
+            color: #fcd34d;
+            font-size: .82rem;
+            display: flex;
+            gap: .5rem;
+            align-items: flex-start;
+        }
+
+        /* ── How it works ─────────────────────────── */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: .875rem;
+            margin-bottom: 1.25rem;
+        }
+        .step {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .step-num {
+            width: 32px; height: 32px;
+            background: var(--grad);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700;
+            font-size: .875rem;
+            margin: 0 auto .5rem;
+        }
+        .step-text { font-size: .8rem; color: var(--text-secondary); }
+
+        /* ── History ──────────────────────────────── */
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: .875rem;
+        }
+        .history-title {
+            font-size: .875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-secondary);
+        }
+        .btn-clear {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: .2rem .6rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: .72rem;
+            transition: all .2s;
+        }
+        .btn-clear:hover { border-color: var(--error); color: var(--error); }
+        .history-list { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: .625rem .875rem;
+            font-size: .82rem;
+        }
+        .hist-icon { font-size: 1.1rem; flex-shrink: 0; }
+        .hist-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .hist-fmt { color: var(--text-muted); font-size: .7rem; flex-shrink: 0; }
+        .history-empty { text-align: center; color: var(--text-muted); padding: 1.5rem; font-size: .85rem; }
+
+        /* ── Spinner ──────────────────────────────── */
+        .spinner {
+            width: 17px; height: 17px;
+            border: 2.5px solid rgba(255,255,255,.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Footer ───────────────────────────────── */
+        footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: .78rem;
+            padding: 2rem 1rem;
+            border-top: 1px solid var(--border);
+        }
+        footer a { color: var(--accent-1); text-decoration: none; }
+
+        /* ── Responsive ───────────────────────────── */
+        @media (max-width: 560px) {
+            .hero h1 { font-size: 1.7rem; }
+            .url-row { flex-direction: column; }
+            .format-grid { grid-template-columns: repeat(3, 1fr); }
+            .steps { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">
+        <div class="logo-icon">&#127925;</div>
+        YouT2mp3
+    </div>
+    <span class="badge">Web Edition v2.0</span>
+</header>
+
+<main>
+
+    <div class="hero">
+        <h1>YouTube &rarr; Audio</h1>
+        <p>Paste any YouTube link and download it as audio instantly</p>
+    </div>
+
+    <!-- How it works -->
+    <div class="steps">
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Paste a YouTube link</div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Pick format &amp; quality</div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Click Download &amp; save</div>
+        </div>
+    </div>
+
+    <!-- Warning -->
+    <div class="warning">
+        &#9888;&#65039; For personal / fair-use only. Respect copyright and YouTube's Terms of Service. Only download content you have rights to.
+    </div>
+
+    <!-- Main converter card -->
+    <div class="card">
+
+        <!-- URL input -->
+        <div class="section-label">YouTube URL</div>
+        <div class="url-row">
+            <input
+                type="url"
+                id="urlInput"
+                class="url-input"
+                placeholder="https://www.youtube.com/watch?v=..."
+                autocomplete="off"
+                spellcheck="false"
+            />
+            <button class="btn-paste" id="pasteBtn" onclick="pasteUrl()">&#128203; Paste</button>
+        </div>
+
+        <!-- Video preview -->
+        <div class="video-preview" id="videoPreview">
+            <img class="video-thumb" id="videoThumb" src="" alt="Thumbnail" />
+            <div class="video-meta">
+                <div class="video-title" id="videoTitle"></div>
+                <div class="video-author" id="videoAuthor"></div>
+            </div>
+        </div>
+
+        <!-- Format & quality -->
+        <div class="section-label">Format &amp; Quality</div>
+        <div class="format-grid">
+            <div>
+                <input type="radio" name="fmt" id="f_mp3_320" value="mp3_320" class="format-radio" checked>
+                <label for="f_mp3_320" class="format-label">
+                    <span class="fmt-name">MP3</span>
+                    <span class="fmt-desc">320 kbps</span>
+                </label>
+            </div>
+            <div>
+                <input type="radio" name="fmt" id="f_mp3_192" value="mp3_192" class="format-radio">
+                <label for="f_mp3_192" class="format-label">
+                    <span class="fmt-name">MP3</span>
+                    <span class="fmt-desc">192 kbps</span>
+                </label>
+            </div>
+            <div>
+                <input type="radio" name="fmt" id="f_mp3_128" value="mp3_128" class="format-radio">
+                <label for="f_mp3_128" class="format-label">
+                    <span class="fmt-name">MP3</span>
+                    <span class="fmt-desc">128 kbps</span>
+                </label>
+            </div>
+            <div>
+                <input type="radio" name="fmt" id="f_wav" value="wav" class="format-radio">
+                <label for="f_wav" class="format-label">
+                    <span class="fmt-name">WAV</span>
+                    <span class="fmt-desc">Lossless</span>
+                </label>
+            </div>
+            <div>
+                <input type="radio" name="fmt" id="f_ogg" value="ogg" class="format-radio">
+                <label for="f_ogg" class="format-label">
+                    <span class="fmt-name">OGG</span>
+                    <span class="fmt-desc">Opus</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Download button -->
+        <button class="btn-download" id="dlBtn" onclick="startDownload()">
+            &#8595; Download Audio
+        </button>
+
+        <!-- Status -->
+        <div class="status-box" id="statusBox"></div>
+
+    </div><!-- /card -->
+
+    <!-- History card -->
+    <div class="card">
+        <div class="history-header">
+            <span class="history-title">&#128190; Recent Downloads</span>
+            <button class="btn-clear" onclick="clearHistory()">Clear</button>
+        </div>
+        <ul class="history-list" id="historyList">
+            <li class="history-empty">No downloads yet</li>
+        </ul>
+    </div>
+
+</main>
+
+<footer>
+    <p>
+        YouT2mp3 Web Edition &mdash;
+        <a href="https://github.com/quantumq1981/YouT2mp3" target="_blank" rel="noopener">Source on GitHub</a>
+        &nbsp;|&nbsp;
+        Powered by <a href="https://cobalt.tools" target="_blank" rel="noopener">cobalt.tools</a>
+    </p>
+    <p style="margin-top:.35rem;">No files are stored on any server. Downloads happen directly in your browser.</p>
+</footer>
+
+<script>
+/* ──────────────────────────────────────────────────────
+   Config
+────────────────────────────────────────────────────── */
+const COBALT_API = 'https://api.cobalt.tools/';
+
+const FORMATS = {
+    mp3_320: { audioFormat: 'mp3',  audioBitrate: '320', label: 'MP3 320kbps' },
+    mp3_192: { audioFormat: 'mp3',  audioBitrate: '192', label: 'MP3 192kbps' },
+    mp3_128: { audioFormat: 'mp3',  audioBitrate: '128', label: 'MP3 128kbps' },
+    wav:     { audioFormat: 'wav',  audioBitrate: '320', label: 'WAV'         },
+    ogg:     { audioFormat: 'opus', audioBitrate: '320', label: 'OGG Opus'   },
+};
+
+/* ──────────────────────────────────────────────────────
+   Paste
+────────────────────────────────────────────────────── */
+async function pasteUrl() {
+    try {
+        const text = await navigator.clipboard.readText();
+        const inp = document.getElementById('urlInput');
+        inp.value = text;
+        triggerPreview(text);
+    } catch {
+        const inp = document.getElementById('urlInput');
+        inp.focus();
+    }
+}
+
+/* ──────────────────────────────────────────────────────
+   Extract YouTube video ID from various URL formats
+────────────────────────────────────────────────────── */
+function extractId(url) {
+    const patterns = [
+        /[?&]v=([a-zA-Z0-9_-]{11})/,
+        /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+        /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+        /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+        /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+    ];
+    for (const p of patterns) {
+        const m = String(url).match(p);
+        if (m) return m[1];
+    }
+    return null;
+}
+
+/* ──────────────────────────────────────────────────────
+   Video preview (uses YouTube oEmbed – no API key, CORS-safe)
+────────────────────────────────────────────────────── */
+let previewTimer = null;
+
+document.getElementById('urlInput').addEventListener('input', e => {
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => triggerPreview(e.target.value), 700);
+});
+
+document.getElementById('urlInput').addEventListener('paste', e => {
+    setTimeout(() => triggerPreview(document.getElementById('urlInput').value), 80);
+});
+
+async function triggerPreview(url) {
+    const preview = document.getElementById('videoPreview');
+    const id = extractId(url);
+    if (!id) { preview.classList.remove('show'); return; }
+
+    try {
+        const res = await fetch(
+            `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`
+        );
+        if (!res.ok) { preview.classList.remove('show'); return; }
+        const data = await res.json();
+        document.getElementById('videoThumb').src  = `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+        document.getElementById('videoTitle').textContent  = data.title;
+        document.getElementById('videoAuthor').textContent = data.author_name;
+        preview.classList.add('show');
+    } catch {
+        preview.classList.remove('show');
+    }
+}
+
+/* ──────────────────────────────────────────────────────
+   Download
+────────────────────────────────────────────────────── */
+async function startDownload() {
+    const url = document.getElementById('urlInput').value.trim();
+
+    if (!url) {
+        showStatus('Please enter a YouTube URL.', 'error');
+        return;
+    }
+    if (!extractId(url)) {
+        showStatus('That doesn\'t look like a valid YouTube link. Check the URL and try again.', 'error');
+        return;
+    }
+
+    const fmtKey = document.querySelector('input[name="fmt"]:checked').value;
+    const fmt    = FORMATS[fmtKey];
+
+    setLoading(true);
+    showStatus('Sending request to conversion service\u2026', 'loading');
+
+    try {
+        const res = await fetch(COBALT_API, {
+            method: 'POST',
+            headers: {
+                'Accept':       'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                url,
+                downloadMode:  'audio',
+                audioFormat:   fmt.audioFormat,
+                audioBitrate:  fmt.audioBitrate,
+                filenameStyle: 'basic',
+            }),
+        });
+
+        let data;
+        try { data = await res.json(); } catch { data = {}; }
+
+        if (!res.ok) {
+            const code = data?.error?.code || `HTTP ${res.status}`;
+            throw new Error(code);
+        }
+        if (data.status === 'error') {
+            throw new Error(data.error?.code || 'Service returned an error.');
+        }
+
+        // Resolve the download URL
+        let dlUrl = null;
+        if (data.status === 'tunnel' || data.status === 'redirect') {
+            dlUrl = data.url;
+        } else if (data.status === 'picker') {
+            // audio key is the extracted audio stream for video+audio combos
+            dlUrl = data.audio?.url ?? (Array.isArray(data.picker) && data.picker[0]?.url);
+        }
+
+        if (!dlUrl) throw new Error('Could not get a download URL from the service.');
+
+        // Trigger browser download
+        const a = document.createElement('a');
+        a.href     = dlUrl;
+        a.download = '';
+        a.target   = '_blank';
+        a.rel      = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        showStatus(
+            'Your download should start automatically. ' +
+            'If it doesn\'t, <a href="' + esc(dlUrl) + '" target="_blank" rel="noopener">click here</a>.',
+            'success'
+        );
+
+        const title = document.getElementById('videoTitle').textContent || url;
+        addToHistory(title, fmt.label, url);
+
+    } catch (err) {
+        console.error('[YouT2mp3]', err);
+        showStatus(friendlyError(err.message), 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+function friendlyError(msg) {
+    if (!msg) return 'Something went wrong. Please try again.';
+    const m = msg.toLowerCase();
+    if (m.includes('unavailable') || m.includes('video.unavailable'))
+        return 'This video is unavailable or private.';
+    if (m.includes('age') || m.includes('sign'))
+        return 'This video is age-restricted or requires sign-in.';
+    if (m.includes('429') || m.includes('rate'))
+        return 'Too many requests – wait a moment and try again.';
+    if (m.includes('fetch') || m.includes('network') || m.includes('failed'))
+        return 'Network error. Check your connection and try again.';
+    if (m.includes('content.video.live'))
+        return 'Live streams cannot be downloaded.';
+    return `Error: ${msg}`;
+}
+
+/* ──────────────────────────────────────────────────────
+   UI helpers
+────────────────────────────────────────────────────── */
+function showStatus(html, type) {
+    const box = document.getElementById('statusBox');
+    box.innerHTML   = html;
+    box.className   = `status-box ${type}`;
+}
+
+function setLoading(on) {
+    const btn = document.getElementById('dlBtn');
+    btn.disabled  = on;
+    btn.innerHTML = on
+        ? '<span class="spinner"></span> Processing\u2026'
+        : '&#8595; Download Audio';
+}
+
+function esc(str) {
+    return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ──────────────────────────────────────────────────────
+   History (localStorage)
+────────────────────────────────────────────────────── */
+function loadHistory() {
+    try { return JSON.parse(localStorage.getItem('yt2mp3_history') || '[]'); }
+    catch { return []; }
+}
+function saveHistory(h) {
+    try { localStorage.setItem('yt2mp3_history', JSON.stringify(h)); } catch {}
+}
+function addToHistory(title, format, url) {
+    const h = loadHistory();
+    h.unshift({ title, format, url, date: new Date().toISOString() });
+    if (h.length > 25) h.pop();
+    saveHistory(h);
+    renderHistory();
+}
+function clearHistory() {
+    saveHistory([]);
+    renderHistory();
+}
+function renderHistory() {
+    const list = document.getElementById('historyList');
+    const h    = loadHistory();
+    if (!h.length) {
+        list.innerHTML = '<li class="history-empty">No downloads yet</li>';
+        return;
+    }
+    list.innerHTML = h.map(item => `
+        <li class="history-item">
+            <span class="hist-icon">&#127925;</span>
+            <span class="hist-name" title="${esc(item.url)}">${esc(item.title)}</span>
+            <span class="hist-fmt">${esc(item.format)}</span>
+        </li>
+    `).join('');
+}
+
+// Init
+renderHistory();
+</script>
+</body>
+</html>

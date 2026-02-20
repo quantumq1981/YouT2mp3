@@ -4,8 +4,23 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
 [![GUI](https://img.shields.io/badge/GUI-Tkinter-orange.svg)]()
+[![Web](https://img.shields.io/badge/Web-GitHub%20Pages-brightgreen.svg)]()
 
-A **professional-grade**, **modern** YouTube to MP3 converter with an intuitive graphical user interface. Built with Python and featuring advanced download capabilities, multiple audio formats, and a sleek user experience.
+A **professional-grade**, **modern** YouTube to MP3 converter available as both a **web app** (GitHub Pages, no install needed) and a **desktop app** (Python/Tkinter).
+
+---
+
+## 🌐 Web Version (GitHub Pages)
+
+**No installation required.** Open `index.html` in any browser, or host it on GitHub Pages:
+
+1. Go to your repo **Settings → Pages**
+2. Set source to the branch containing `index.html` (root `/`)
+3. Your converter will be live at `https://<username>.github.io/<repo>/`
+
+The web app uses the [cobalt.tools](https://cobalt.tools) API to convert videos server-side and delivers the audio file directly to your browser. Supports MP3 (128/192/320 kbps), WAV, and OGG Opus.
+
+---
 
 [🇹🇷 Türkçe](#turkish) | [🇺🇸 English](#english)
 
