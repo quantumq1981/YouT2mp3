@@ -484,7 +484,10 @@
 /* ──────────────────────────────────────────────────────
    Config
 ────────────────────────────────────────────────────── */
-const COBALT_API = 'https://api.cobalt.tools/';
+const COBALT_API_ENDPOINTS = [
+    'https://api.cobalt.tools/api/json',
+    'https://api.cobalt.tools/'
+];
 
 const FORMATS = {
     mp3_320: { audioFormat: 'mp3',  audioBitrate: '320', label: 'MP3 320kbps' },
@@ -583,31 +586,14 @@ async function startDownload() {
     showStatus('Sending request to conversion service\u2026', 'loading');
 
     try {
-        const res = await fetch(COBALT_API, {
-            method: 'POST',
-            headers: {
-                'Accept':       'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                url,
-                downloadMode:  'audio',
-                audioFormat:   fmt.audioFormat,
-                audioBitrate:  fmt.audioBitrate,
-                filenameStyle: 'basic',
-            }),
-        });
-
-        let data;
-        try { data = await res.json(); } catch { data = {}; }
-
-        if (!res.ok) {
-            const code = data?.error?.code || `HTTP ${res.status}`;
-            throw new Error(code);
-        }
-        if (data.status === 'error') {
-            throw new Error(data.error?.code || 'Service returned an error.');
-        }
+        const payload = {
+            url,
+            downloadMode:  'audio',
+            audioFormat:   fmt.audioFormat,
+            audioBitrate:  fmt.audioBitrate,
+            filenameStyle: 'basic',
+        };
+        const { data } = await requestCobalt(payload);
 
         // Resolve the download URL
         let dlUrl = null;
@@ -647,6 +633,45 @@ async function startDownload() {
     }
 }
 
+async function requestCobalt(payload) {
+    let lastError = new Error('No conversion endpoint was available.');
+
+    for (const endpoint of COBALT_API_ENDPOINTS) {
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Accept':       'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            let data;
+            try { data = await res.json(); } catch { data = {}; }
+
+            if (!res.ok) {
+                const code = data?.error?.code || data?.error || `HTTP ${res.status}`;
+                throw new Error(code);
+            }
+            if (data.status === 'error') {
+                throw new Error(data.error?.code || data.error || 'Service returned an error.');
+            }
+
+            return { data, endpoint };
+        } catch (err) {
+            lastError = err;
+            const msg = String(err?.message || '').toLowerCase();
+            const authFailure = msg.includes('jwt') || msg.includes('auth') || msg.includes('unauthorized');
+            if (!authFailure) {
+                throw err;
+            }
+        }
+    }
+
+    throw lastError;
+}
+
 function friendlyError(msg) {
     if (!msg) return 'Something went wrong. Please try again.';
     const m = msg.toLowerCase();
@@ -656,6 +681,8 @@ function friendlyError(msg) {
         return 'This video is age-restricted or requires sign-in.';
     if (m.includes('429') || m.includes('rate'))
         return 'Too many requests – wait a moment and try again.';
+    if (m.includes('jwt') || m.includes('auth'))
+        return 'The converter service rejected authorization. The app will retry alternate endpoints automatically; please try again in a moment.';
     if (m.includes('fetch') || m.includes('network') || m.includes('failed'))
         return 'Network error. Check your connection and try again.';
     if (m.includes('content.video.live'))
